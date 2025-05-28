@@ -1,0 +1,19 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/fbc/pull/97","configuration-time":"Thu,27 Mar 2025 12:35:34 UTC"},"message":"done"}'
+      name: "{{.baseName}}{{.nameSuffix}}"
+    spec:
+      application: "{{.baseName}}{{.nameSuffix}}"
+      componentName: "{{.baseName}}{{.nameSuffix}}"
+      source:
+        git:
+          context: "{{ .gitContext }}"
+          dockerfileUrl: catalog.Dockerfile
+          revision: "{{.gitRevision}}"
+          url: https://github.com/securesign/fbc

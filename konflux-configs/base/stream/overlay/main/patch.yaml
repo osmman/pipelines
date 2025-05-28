@@ -1,0 +1,12 @@
+# version
+- op: replace
+  path: /spec/template/values/0/value
+  value: "main"
+
+# nameSuffix
+- op: add
+  path: /spec/template/values/-
+  value:
+    name: nameSuffix
+    value: ""
+

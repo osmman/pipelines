@@ -1,0 +1,27 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: "{{.baseName}}{{.nameSuffix}}-enterprise-contract"
+    spec:
+      application: "{{.baseName}}{{.nameSuffix}}"
+      contexts:
+        - description: Application testing
+          name: application
+      params:
+        - name: POLICY_CONFIGURATION
+          value: rhtap-releng-tenant/fbc-standard
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/redhat-appstudio/build-definitions
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline

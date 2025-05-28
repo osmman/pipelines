@@ -14,7 +14,7 @@ spec:
   params:
     - name: manifest
       type: string
-      description: Manifest to apply
+      description: Manifest file or kustomize directory to apply
     - name: release
       type: string
       default: "false"
@@ -25,13 +25,29 @@ spec:
         #!/usr/bin/env bash
         set -euo pipefail
 
-        echo "Applying: $(params.manifest)"
-        cat "$(params.manifest)"
-        echo ""
+        echo "Processing: $(params.manifest)"
 
-        if [ "$(params.release)" == "true" ]; then
-          oc apply -f "$(params.manifest)"
+        # Check if it's a directory (kustomize) or file (manifest)
+        if [ -d "$(params.manifest)" ]; then
+          echo "Detected kustomize directory: $(params.manifest)"
+          if [ "$(params.release)" == "true" ]; then
+            echo "Applying kustomization..."
+            oc apply -k "$(params.manifest)"
+          else
+            echo "Performing DRY RUN on kustomization"
+            oc apply --dry-run=server -k "$(params.manifest)"
+          fi
+        elif [ -f "$(params.manifest)" ]; then
+          echo "Detected manifest file: $(params.manifest)"
+          cat "$(params.manifest)"
+          echo ""
+          if [ "$(params.release)" == "true" ]; then
+            oc apply -f "$(params.manifest)"
+          else
+            echo "Performing DRY RUN on manifest"
+            oc apply --dry-run=server -f "$(params.manifest)"
+          fi
         else
-          echo "Performing DRY RUN"
-          oc apply --dry-run=server -f "$(params.manifest)"
+          echo "ERROR: $(params.manifest) is neither a file nor a directory"
+          exit 1
         fi
