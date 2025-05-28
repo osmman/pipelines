@@ -1,0 +1,112 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: deploy-konflux-config
+spec:
+  params:
+  - description: Source Repository URL
+    name: git-url
+    type: string
+  - default: ""
+    description: Revision of the Source Repository
+    name: revision
+    type: string
+  - default: konflux-configs/overlay/prod
+    description: Path to the kustomization directory to apply
+    name: kustomize-path
+    type: string
+  - default: "false"
+    description: Whether to actually apply the changes (true) or just test (false)  
+    name: apply-changes
+    type: string
+  results:
+  - description: Git URL of the repository
+    name: CHAINS-GIT_URL
+    value: $(tasks.clone-repository.results.url)
+  - description: Git commit SHA
+    name: CHAINS-GIT_COMMIT
+    value: $(tasks.clone-repository.results.commit)
+  tasks:
+  - name: init
+    params:
+    - name: image-url
+      value: "registry.redhat.io/ubi9-minimal:latest"
+    - name: rebuild
+      value: "false"
+    - name: skip-checks
+      value: "true"
+    taskRef:
+      params:
+      - name: name
+        value: init
+      - name: bundle
+        value: quay.io/konflux-ci/tekton-catalog/task-init:0.2@sha256:1d8221c84f91b923d89de50bf16481ea729e3b68ea04a9a7cbe8485ddbb27ee6
+      - name: kind
+        value: task
+      resolver: bundles
+  - name: clone-repository
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: revision
+      value: $(params.revision)
+    runAfter:
+    - init
+    taskRef:
+      params:
+      - name: name
+        value: git-clone
+      - name: bundle
+        value: quay.io/konflux-ci/tekton-catalog/task-git-clone:0.1@sha256:7939000e2f92fc8b5d2c4ee4ba9000433c5aa7700d2915a1d4763853d5fd1fd4
+      - name: kind
+        value: task
+      resolver: bundles
+    workspaces:
+    - name: output
+      workspace: workspace
+    - name: basic-auth
+      workspace: git-auth
+  - name: test-kustomization
+    runAfter:
+    - clone-repository
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: 'https://github.com/osmman/pipelines.git'
+      - name: revision
+        value: 'konflux-configuration-as-code'
+      - name: pathInRepo
+        value: 'tasks/apply-manifest.yaml'
+    params:
+    - name: manifest
+      value: $(params.kustomize-path)
+    - name: release
+      value: "false"
+    workspaces:
+    - name: output
+      workspace: workspace
+  - name: apply-kustomization
+    runAfter:
+    - test-kustomization
+    taskRef:
+      resolver: git
+      params:
+      - name: url
+        value: 'https://github.com/osmman/pipelines.git'
+      - name: revision
+        value: 'konflux-configuration-as-code'
+      - name: pathInRepo
+        value: 'tasks/apply-manifest.yaml'
+    params:
+    - name: manifest
+      value: $(params.kustomize-path)
+    - name: release
+      value: $(params.apply-changes)
+    workspaces:
+    - name: output
+      workspace: workspace
+  workspaces:
+  - name: workspace
+  - name: git-auth
+    optional: true

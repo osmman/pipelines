@@ -1,0 +1,19 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      annotations:
+        build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+        build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/artifact-signer-ansible/pull/259","configuration-time":"Wed, 07 Aug 2024 08:59:18 UTC"},"message":"done"}'
+      name: "artifact-signer-ansible{{.nameSuffix}}"
+    spec:
+      application: "ansible{{.nameSuffix}}"
+      componentName: "artifact-signer-ansible{{.nameSuffix}}"
+      source:
+        git:
+          context: ./
+          dockerfileUrl: Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/artifact-signer-ansible

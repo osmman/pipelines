@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base
+
+patches:
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: manager-patch.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: bundle-patch.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: ec-patch.yaml
+  - target:
+      name: operator-template
+      kind: ProjectDevelopmentStreamTemplate
+    path: e2e-patch.yaml

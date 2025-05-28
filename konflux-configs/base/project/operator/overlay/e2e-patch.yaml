@@ -1,0 +1,24 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      labels:
+        test.appstudio.openshift.io/optional: "true"
+      name: "rhtas-operator-e2e-test{{.nameSuffix}}"
+    spec:
+      application: "operator{{.nameSuffix}}"
+      contexts:
+        - description: runs the integration test for a group Snapshot
+          name: group
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/securesign/pipelines.git
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/rhtas-operator-e2e.yaml
+        resolver: git
+        resourceKind: pipeline

@@ -1,0 +1,16 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1alpha1
+    kind: Component
+    metadata:
+      name: "rhtas-operator-bundle{{.nameSuffix}}"
+    spec:
+      application: "operator{{.nameSuffix}}"
+      componentName: "rhtas-operator-bundle{{.nameSuffix}}"
+      source:
+        git:
+          context: ./
+          dockerfileUrl: bundle.Dockerfile
+          revision: "{{.branch}}"
+          url: https://github.com/securesign/secure-sign-operator

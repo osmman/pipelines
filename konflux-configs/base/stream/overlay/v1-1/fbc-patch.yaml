@@ -1,0 +1,10 @@
+# version
+- op: replace
+  path: /spec/template/values/0/value
+  value: "v1.1"
+
+# gitRevision
+- op: replace
+  path: /spec/template/values/2/value
+  value: "release-1.1"
+

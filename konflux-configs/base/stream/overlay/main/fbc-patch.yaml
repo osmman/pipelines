@@ -1,0 +1,6 @@
+# nameSuffix
+- op: add
+  path: /spec/template/values/-
+  value:
+    name: nameSuffix
+    value: ""
