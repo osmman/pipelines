@@ -1,0 +1,8 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: Project
+metadata:
+  name: ansible
+spec:
+  displayName: "Red Hat Trusted Artifact Signer Ansible"
+  description: |
+    Ansible collections to automate the deployment of the Red Hat Trusted Artifact Signer (RHTAS) service on Red Hat Enterprise Linux (RHEL).

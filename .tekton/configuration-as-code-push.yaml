@@ -1,0 +1,45 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/osmman/pipelines?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/cancel-in-progress: "false"
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+      == "konflux-configuration-as-code" && ( "konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-push.yaml".pathChanged())
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: konflux
+    appstudio.openshift.io/component: configuration-as-code
+    pipelines.appstudio.openshift.io/type: build
+  name: configuration-as-code-on-push
+  namespace: tturek-tenant
+spec:
+  params:
+  - name: git-url
+    value: '{{source_url}}'
+  - name: revision
+    value: '{{revision}}'
+  - name: output-image
+    value: quay.io/osmman/configuration-as-code:{{revision}}
+  - name: dockerfile
+    value: konflux-configs/Dockerfile
+  - name: build-source-image
+    value: "true"
+  - name: prefetch-input
+    value: '{"path": "pipeline-tests", "type": "gomod"}'
+  - name: hermetic
+    value: "true"
+  - name: go_unit_test
+    value: "false"
+  pipelineRef:
+    name: docker-build-oci-ta
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-configuration-as-code
+  workspaces:
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+status: {}

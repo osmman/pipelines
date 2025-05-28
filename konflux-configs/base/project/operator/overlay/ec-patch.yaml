@@ -1,0 +1,24 @@
+- op: add
+  path: /spec/resources/-
+  value:
+    apiVersion: appstudio.redhat.com/v1beta2
+    kind: IntegrationTestScenario
+    metadata:
+      annotations:
+        test.appstudio.openshift.io/kind: enterprise-contract
+      name: "operator{{.nameSuffix}}-enterprise-contract"
+    spec:
+      application: "operator{{.nameSuffix}}"
+      contexts:
+        - description: Application testing
+          name: application
+      resolverRef:
+        params:
+          - name: url
+            value: https://github.com/konflux-ci/build-definitions
+          - name: revision
+            value: main
+          - name: pathInRepo
+            value: pipelines/enterprise-contract.yaml
+        resolver: git
+        resourceKind: pipeline

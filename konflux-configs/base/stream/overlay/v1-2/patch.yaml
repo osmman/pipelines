@@ -1,0 +1,9 @@
+# version
+- op: replace
+  path: /spec/template/values/0/value
+  value: "v1.2"
+
+# branch
+- op: replace
+  path: /spec/template/values/1/value
+  value: "release-1.2"

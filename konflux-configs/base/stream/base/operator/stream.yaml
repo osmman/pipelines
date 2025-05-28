@@ -1,0 +1,13 @@
+apiVersion: projctl.konflux.dev/v1beta1
+kind: ProjectDevelopmentStream
+metadata:
+  name: operator
+spec:
+  project: operator
+  template:
+    name: operator-template
+    values:
+      - name: version
+        value: "main"
+      - name: branch
+        value: "main"
