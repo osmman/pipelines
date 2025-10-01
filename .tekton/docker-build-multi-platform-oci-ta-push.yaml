@@ -2,12 +2,12 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
-    build.appstudio.openshift.io/repo: https://github.com/securesign/pipelines?rev={{revision}}
+    build.appstudio.openshift.io/repo: https://github.com/osmman/pipelines?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "main" && ( ".tekton/docker-build-multi-platform-oci-ta-push.yaml".pathChanged()
+      == "configuration-as-code" && ( ".tekton/docker-build-multi-platform-oci-ta-push.yaml".pathChanged()
       || "pipeline-tests".pathChanged() || "pipelines/docker-build-multi-platform-oci-ta.yaml".pathChanged()
       )
     pipelinesascode.tekton.dev/pipeline: pipelines/docker-build-multi-platform-oci-ta.yaml
@@ -17,7 +17,7 @@ metadata:
     appstudio.openshift.io/component: docker-build-multi-platform-oci-ta
     pipelines.appstudio.openshift.io/type: build
   name: docker-build-multi-platform-oci-ta-on-push
-  namespace: rhtas-tenant
+  namespace: tturek-tenant
 spec:
   params:
   - name: git-url

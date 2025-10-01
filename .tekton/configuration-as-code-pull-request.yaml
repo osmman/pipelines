@@ -10,7 +10,8 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "configuration-as-code" && ( "konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-pull-request.yaml".pathChanged()
-      || "Dockerfile".pathChanged() )
+      )
+    pipelinesascode.tekton.dev/pipeline: pipelines/docker-build-oci-ta.yaml
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: konflux
@@ -18,7 +19,6 @@ metadata:
     pipelines.appstudio.openshift.io/type: build
   name: configuration-as-code-on-pull-request
   namespace: tturek-tenant
-
 spec:
   params:
   - name: git-url
@@ -26,7 +26,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/osmman/configuration-as-code:on-pr-{{revision}}
+    value: quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code:on-pr-{{revision}}
   - name: image-expires-after
     value: 5d
   - name: dockerfile

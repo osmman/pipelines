@@ -4,16 +4,16 @@ kind: Kustomization
 namespace: tturek-tenant
 
 resources:
-  - ../../base/project
-  - ../../base/stream
-  - ../../base/serviceAccounts
+#  - ../../base/project
+#  - ../../base/stream
+#  - ../../base/serviceAccounts
   - ../../base/releasePlans
   - ../../base/application
 
 configMapGenerator:
   - name: registry-config
     literals:
-      - registry-namespace=osmman
+      - registry-namespace=tturek-tenant
       - github-org=osmman
 
 replacements:
@@ -23,12 +23,12 @@ replacements:
       fieldPath: data.registry-namespace
     targets:
       - select:
-          kind: Component
+          kind: ImageRepository
         fieldPaths:
-          - spec.containerImage
+          - spec.image.name
         options:
           delimiter: '/'
-          index: 1
+          index: 0
   - source:
       kind: ConfigMap
       name: registry-config
