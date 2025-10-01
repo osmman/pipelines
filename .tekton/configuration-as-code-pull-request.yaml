@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
-      == "configuration-as-code" && ( "konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-pull-request.yaml".pathChanged()
+      == "configuration-as-code" && ( "./konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-pull-request.yaml".pathChanged()
       || "Dockerfile".pathChanged() )
   creationTimestamp: null
   labels:
@@ -18,40 +18,6 @@ metadata:
     pipelines.appstudio.openshift.io/type: build
   name: configuration-as-code-on-pull-request
   namespace: tturek-tenant
-
-spec:
-  params:
-  - name: git-url
-    value: '{{source_url}}'
-  - name: revision
-    value: '{{revision}}'
-  - name: output-image
-    value: quay.io/osmman/configuration-as-code:on-pr-{{revision}}
-  - name: image-expires-after
-    value: 5d
-  - name: dockerfile
-    value: Dockerfile
-  - name: path-context
-    value: konflux-configs
-  - name: build-source-image
-    value: "true"
-  - name: prefetch-input
-    value: ''
-  - name: hermetic
-    value: "true"
-  - name: go_unit_test
-    value: "false"
-  pipelineRef:
-    name: docker-build-oci-ta
-  taskRunTemplate:
-    serviceAccountName: build-pipeline-configuration-as-code
-  workspaces:
-  - name: git-auth
-    secret:
-      secretName: '{{ git_auth_secret }}'
-status: {}
-
-
 spec:
   params:
   - name: git-url
