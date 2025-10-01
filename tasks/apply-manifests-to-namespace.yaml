@@ -1,0 +1,75 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: apply-manifests-to-namespace
+spec:
+  description: >-
+    Tekton task to apply manifests to a specific namespace
+  workspaces:
+    - name: output
+  stepTemplate:
+    env:
+      - name: HOME
+        value: /workspace
+    image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+    workingDir: /workspace/output/source
+  params:
+    - name: manifestsFile
+      type: string
+      description: Path to the manifests file to apply
+    - name: namespace
+      type: string
+      description: Target namespace for applying manifests
+    - name: dryRun
+      type: string
+      default: "false"
+      description: Whether to perform a dry run (true/false)
+  steps:
+    - name: apply-manifests
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        MANIFESTS_FILE="$(params.manifestsFile)"
+        NAMESPACE="$(params.namespace)"
+        DRY_RUN="$(params.dryRun)"
+        
+        echo "Applying manifests from: $MANIFESTS_FILE"
+        echo "Target namespace: $NAMESPACE"
+        echo "Dry run mode: $DRY_RUN"
+        
+        if [ ! -f "$MANIFESTS_FILE" ]; then
+          echo "ERROR: Manifests file not found: $MANIFESTS_FILE"
+          exit 1
+        fi
+        
+        echo "Manifests content preview:"
+        echo "========================="
+        head -50 "$MANIFESTS_FILE"
+        echo "========================="
+        
+        # Ensure namespace exists
+        echo "Checking if namespace '$NAMESPACE' exists..."
+        if ! oc get namespace "$NAMESPACE" &>/dev/null; then
+          echo "Namespace '$NAMESPACE' does not exist. Creating it..."
+          if [ "$DRY_RUN" == "true" ]; then
+            echo "DRY RUN: Would create namespace $NAMESPACE"
+          else
+            oc create namespace "$NAMESPACE"
+            echo "Created namespace '$NAMESPACE'"
+          fi
+        else
+          echo "Namespace '$NAMESPACE' already exists"
+        fi
+        
+        # Apply manifests to the namespace
+        echo "Applying manifests to namespace '$NAMESPACE'..."
+        if [ "$DRY_RUN" == "true" ]; then
+          echo "DRY RUN: Validating manifests..."
+          oc apply --dry-run=server -n "$NAMESPACE" -f "$MANIFESTS_FILE"
+          echo "DRY RUN: Manifests are valid"
+        else
+          oc apply -n "$NAMESPACE" -f "$MANIFESTS_FILE"
+          echo "Successfully applied manifests to namespace '$NAMESPACE'"
+        fi
+

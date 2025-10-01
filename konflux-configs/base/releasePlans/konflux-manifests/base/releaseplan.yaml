@@ -1,0 +1,21 @@
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ReleasePlan
+metadata:
+  labels:
+    release.appstudio.openshift.io/auto-release: 'true'
+    release.appstudio.openshift.io/standing-attribution: 'true'
+  name: deploy-konflux-configuration-as-code
+spec:
+  application: konflux
+  tenantPipeline:
+    params: []
+    serviceAccountName: konflux-configuration-as-code-deployer
+    pipelineRef:
+      resolver: git
+      params:
+        - name: url
+          value: "https://github.com/osmman/pipelines"
+        - name: revision
+          value: configuration-as-code
+        - name: pathInRepo
+          value: "pipelines/deploy-konflux-config.yaml"

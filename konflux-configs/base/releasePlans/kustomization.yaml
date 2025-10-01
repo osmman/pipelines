@@ -6,3 +6,4 @@ resources:
   - promoteToCandidateRPs/fbc/overlays
   - promoteToCandidateRPs/fbc-v1-1/overlays
   - promoteToCandidateRPs/operator/overlays
+  - konflux-manifests/base

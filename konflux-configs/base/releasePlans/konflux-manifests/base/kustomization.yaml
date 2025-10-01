@@ -1,0 +1,3 @@
+resources:
+  - releaseplan.yaml
+  - rbac.yaml
