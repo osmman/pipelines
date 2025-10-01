@@ -13,7 +13,7 @@ spec:
       description: Path to the stored Snapshot spec JSON file
     - name: imagePattern
       type: string
-      default: "quay.io/osmman/configuration-as-code"
+      default: "quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code"
       description: Pattern to identify the configuration-as-code image
   results:
     - name: manifestsFile
@@ -61,7 +61,7 @@ spec:
         echo "Extracting manifests.yaml from image: $CONFIG_IMAGE"
         
         # Use oc image extract to extract the manifests.yaml file
-        echo "Extracting /manifests.yaml from image using oc..."
+        echo "Extracting /manifests.yaml from image"
         oc image extract "$CONFIG_IMAGE" --path="/manifests.yaml:." || {
           echo "ERROR: Failed to extract /manifests.yaml from image $CONFIG_IMAGE"
           echo "Checking if the file exists in the image..."
