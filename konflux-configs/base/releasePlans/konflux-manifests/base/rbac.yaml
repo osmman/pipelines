@@ -10,13 +10,13 @@ metadata:
   name: konflux-configuration-as-code-role
 rules:
   - apiGroups: ["appstudio.redhat.com"]
-    resources: ["applications", "components", "integrationtestscenarios", "releaseplans"]
+    resources: ["applications", "components", "integrationtestscenarios", "releaseplans", "snapshots"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
   - apiGroups: ["projctl.konflux.dev"]
     resources: ["projects", "projectdevelopmentstreamtemplates", "projectdevelopmentstreams"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
   - apiGroups: [""]
-    resources: ["serviceaccounts"]
+    resources: ["serviceaccounts", "configmaps"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]

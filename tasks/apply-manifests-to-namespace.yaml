@@ -48,20 +48,6 @@ spec:
         head -50 "$MANIFESTS_FILE"
         echo "========================="
         
-        # Ensure namespace exists
-        echo "Checking if namespace '$NAMESPACE' exists..."
-        if ! oc get namespace "$NAMESPACE" &>/dev/null; then
-          echo "Namespace '$NAMESPACE' does not exist. Creating it..."
-          if [ "$DRY_RUN" == "true" ]; then
-            echo "DRY RUN: Would create namespace $NAMESPACE"
-          else
-            oc create namespace "$NAMESPACE"
-            echo "Created namespace '$NAMESPACE'"
-          fi
-        else
-          echo "Namespace '$NAMESPACE' already exists"
-        fi
-        
         # Apply manifests to the namespace
         echo "Applying manifests to namespace '$NAMESPACE'..."
         if [ "$DRY_RUN" == "true" ]; then
