@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
       == "configuration-as-code" && ( "konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-push.yaml".pathChanged()
-      || "Dockerfile".pathChanged() )
+      )
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: konflux
@@ -24,7 +24,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: output-image
-    value: quay.io/osmman/configuration-as-code:{{revision}}
+    value: quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code:{{revision}}
   - name: dockerfile
     value: Dockerfile
   - name: path-context

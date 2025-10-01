@@ -5,3 +5,4 @@ resources:
   - application.yaml
   - component.yaml
   - ec.yaml
+  - imagerepository.yaml
