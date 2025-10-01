@@ -9,9 +9,8 @@ metadata:
     pipelinesascode.tekton.dev/cancel-in-progress: "true"
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
-      == "konflux-configuration-as-code" && ( "./konflux-configs/***".pathChanged()
-      || ".tekton/configuration-as-code-pull-request.yaml".pathChanged() || "Dockerfile".pathChanged()
-      )
+      == "configuration-as-code" && ( "./konflux-configs/***".pathChanged() || ".tekton/configuration-as-code-pull-request.yaml".pathChanged()
+      || "Dockerfile".pathChanged() )
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: konflux
