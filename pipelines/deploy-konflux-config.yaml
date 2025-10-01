@@ -34,7 +34,7 @@ spec:
           value: $(params.snapshot)
       workspaces:
         - name: output
-          workspace: workspace
+          workspace: release-workspace
           
     - name: extract-manifests
       runAfter:
@@ -55,7 +55,7 @@ spec:
           value: "quay.io/osmman/configuration-as-code"
       workspaces:
         - name: output
-          workspace: workspace
+          workspace: release-workspace
           
     - name: apply-manifests
       runAfter:
@@ -78,8 +78,7 @@ spec:
           value: $(params.dryRun)
       workspaces:
         - name: output
-          workspace: workspace
+          workspace: release-workspace
           
   workspaces:
-    - name: workspace
-
+    - name: release-workspace

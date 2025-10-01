@@ -11,12 +11,16 @@ metadata:
 rules:
   - apiGroups: ["appstudio.redhat.com"]
     resources: ["applications", "components", "integrationtestscenarios", "releaseplans"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
   - apiGroups: ["projctl.konflux.dev"]
     resources: ["projects", "projectdevelopmentstreamtemplates", "projectdevelopmentstreams"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - resources: ["serviceaccounts", "roles", "rolebindings"]
-    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
