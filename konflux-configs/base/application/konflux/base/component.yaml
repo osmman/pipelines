@@ -14,7 +14,7 @@ spec:
   containerImage: quay.io/securesign/configuration-as-code
   source:
     git:
+      url: https://github.com/securesign/pipelines.git
       revision: configuration-as-code
-      url: https://github.com/securesign/pipelines
       context: ./konflux-configs
       dockerfileUrl: Dockerfile
