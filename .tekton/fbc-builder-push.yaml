@@ -2,12 +2,12 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
-    build.appstudio.openshift.io/repo: https://github.com/securesign/pipelines?rev={{revision}}
+    build.appstudio.openshift.io/repo: https://github.com/osmman/pipelines?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
-      == "main" && ( "pipeline-tests/fbc/***".pathChanged() || ".tekton/fbc-builder-push.yaml".pathChanged()
+      == "configuration-as-code" && ( "pipeline-tests/fbc/***".pathChanged() || ".tekton/fbc-builder-push.yaml".pathChanged()
       || "pipeline-tests/fbc/catalog.Dockerfile".pathChanged() || "pipelines/fbc-builder.yaml".pathChanged()
       )
     pipelinesascode.tekton.dev/pipeline: pipelines/fbc-builder.yaml
@@ -17,7 +17,7 @@ metadata:
     appstudio.openshift.io/component: fbc-builder
     pipelines.appstudio.openshift.io/type: build
   name: fbc-builder-on-push
-  namespace: rhtas-tenant
+  namespace: tturek-tenant
 spec:
   params:
   - name: git-url
