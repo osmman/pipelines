@@ -9,7 +9,6 @@ WORKDIR /tmp
 
 COPY ./base/ ./base/
 COPY ./overlay/ ./overlay/
-COPY ./releasePlans/ ./releasePlans/
 
 RUN oc kustomize -o /tmp/manifests.yaml ./overlay/$ENVIRONMENT
 
