@@ -4,9 +4,9 @@ kind: Kustomization
 namespace: tturek-tenant
 
 resources:
-  - ../../base/project
-  - ../../base/stream
-  - ../../base/serviceAccounts
+#  - ../../base/project
+#  - ../../base/stream
+#  - ../../base/serviceAccounts
   - ../../base/releasePlans
   - ../../base/application
 
@@ -24,6 +24,12 @@ replacements:
     targets:
       - select:
           kind: Component
+        reject:
+          - name: configuration-as-code
+          - name: docker-build
+          - name: docker-build-oci-ta  
+          - name: docker-build-multi-platform-oci-ta
+          - name: fbc-builder
         fieldPaths:
           - spec.containerImage
         options:
