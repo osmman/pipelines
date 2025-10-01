@@ -52,7 +52,7 @@ spec:
         - name: snapshotSpecFile
           value: "$(tasks.parse-snapshot.results.snapshotSpecFile)"
         - name: imagePattern
-          value: "quay.io/osmman/configuration-as-code"
+          value: "quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code"
       workspaces:
         - name: output
           workspace: release-workspace
