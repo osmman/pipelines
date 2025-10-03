@@ -1,0 +1,83 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: deploy-konflux-config
+spec:
+  description: |
+    Konflux integration test pipeline that processes snapshots containing configuration-as-code
+    images and applies the manifests to the tturek-tenant namespace
+  params:
+    - name: SNAPSHOT
+      type: string
+      description: The JSON string of the Snapshot
+  tasks:
+    - name: resolve-image
+      taskSpec:
+        params:
+          - name: SNAPSHOT
+            type: string
+            description: The JSON string of the Snapshot
+          - name: imagePattern
+            type: string
+            default: "quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code"
+            description: Pattern to identify the configuration-as-code image
+        results:
+          - name: configImage
+            description: The resolved configuration-as-code image URL
+        steps:
+          - name: resolve-image
+            image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+            env:
+              - name: SNAPSHOT
+                value: '$(params.SNAPSHOT)'
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              IMAGE_PATTERN="$(params.imagePattern)"
+              
+              # Validate that we have valid JSON
+              if ! echo "$SNAPSHOT" | jq . >/dev/null 2>&1; then
+                echo "ERROR: SNAPSHOT parameter does not contain valid JSON"
+                echo "SNAPSHOT value: $SNAPSHOT"
+                exit 1
+              fi
+
+              # SNAPSHOT contains the spec data directly (components array)
+              CONFIG_IMAGE=$(echo "$SNAPSHOT" | jq -r --arg pattern "$IMAGE_PATTERN" '
+                .components[] | 
+                select(.containerImage | contains($pattern)) | 
+                .containerImage')
+              
+              if [ -z "$CONFIG_IMAGE" ] || [ "$CONFIG_IMAGE" = "null" ]; then
+                echo "ERROR: No image matching pattern '$IMAGE_PATTERN' found in snapshot"
+                echo "Available images in snapshot:"
+                echo "$SNAPSHOT" | jq -r '.components[].containerImage'
+                exit 1
+              fi
+              
+              echo "Found configuration-as-code image: $CONFIG_IMAGE"
+              echo -n "$CONFIG_IMAGE" > "$(results.configImage.path)"
+      params:
+        - name: SNAPSHOT
+          value: $(params.SNAPSHOT)
+        - name: imagePattern
+          value: "quay.io/redhat-user-workloads/tturek-tenant/configuration-as-code"
+        
+    - name: extract-and-apply-manifests
+      runAfter:
+        - resolve-image
+      taskRef:
+        resolver: git
+        params:
+          - name: url
+            value: "https://github.com/osmman/pipelines.git"
+          - name: revision
+            value: configuration-as-code
+          - name: pathInRepo
+            value: tasks/extract-and-apply-manifests.yaml
+      params:
+        - name: configImage
+          value: "$(tasks.resolve-image.results.configImage)"
+        - name: release
+          value: "false"

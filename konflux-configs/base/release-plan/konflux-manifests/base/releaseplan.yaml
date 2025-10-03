@@ -18,4 +18,4 @@ spec:
         - name: revision
           value: configuration-as-code
         - name: pathInRepo
-          value: "pipelines/deploy-konflux-config.yaml"
+          value: "pipelines/konflux/deploy-config.yaml"

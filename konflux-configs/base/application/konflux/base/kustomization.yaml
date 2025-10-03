@@ -6,3 +6,4 @@ resources:
   - component.yaml
   - ec.yaml
   - imagerepository.yaml
+  - integrationtest.yaml

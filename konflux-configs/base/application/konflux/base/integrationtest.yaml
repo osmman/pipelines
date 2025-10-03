@@ -1,0 +1,19 @@
+apiVersion: appstudio.redhat.com/v1beta2
+kind: IntegrationTestScenario
+metadata:
+  name: "configuration-as-code-it"
+spec:
+  application: "konflux"
+  contexts:
+    - description: execute the integration test when component configuration-as-code updates
+      name: component_configuration-as-code
+  resolverRef:
+    params:
+      - name: url
+        value: https://github.com/osmman/pipelines.git
+      - name: revision
+        value: configuration-as-code
+      - name: pathInRepo
+        value: pipelines/konflux/integration-test.yaml
+    resolver: git
+    resourceKind: pipeline

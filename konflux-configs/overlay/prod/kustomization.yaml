@@ -4,10 +4,10 @@ kind: Kustomization
 namespace: rhtas-tenant
 
 resources:
-  - ../../base/project
-  - ../../base/stream
-  - ../../base/serviceAccounts
-  - ../../base/releasePlans
+ # - ../../base/project
+ # - ../../base/stream
+ # - ../../base/service-account
+  - ../../base/release-plan
   - ../../base/application
 
 # Prod environment already uses quay.io/securesign prefix in base

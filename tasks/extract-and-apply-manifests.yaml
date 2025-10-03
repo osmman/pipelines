@@ -1,0 +1,86 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: extract-and-apply-manifests
+spec:
+  description: >-
+    Tekton task to extract manifests from a configuration-as-code image and apply them to the cluster.
+    This task combines both extraction and application in a single atomic operation.
+  params:
+    - name: configImage
+      type: string
+      description: The configuration-as-code image URL to extract manifests from
+    - name: release
+      type: string
+      default: "false"
+      description: Whether to perform actual deployment (true) or dry run (false)
+  volumes:
+    - name: shared-data
+      emptyDir: {}
+  steps:
+    - name: extract-manifests
+      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      volumeMounts:
+        - name: shared-data
+          mountPath: /workspace
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        CONFIG_IMAGE="$(params.configImage)"
+        echo "Extracting manifests from image: $CONFIG_IMAGE"
+        
+        # Create a temporary directory for extraction
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+        
+        # Use oc image extract to extract the manifests.yaml file
+        echo "Extracting /manifests.yaml from image"
+        oc image extract "$CONFIG_IMAGE" --path="/manifests.yaml:." || {
+          echo "ERROR: Failed to extract /manifests.yaml from image $CONFIG_IMAGE"
+          exit 1
+        }
+        
+        if [ ! -f "./manifests.yaml" ]; then
+          echo "ERROR: manifests.yaml not found in extracted content"
+          exit 1
+        fi
+        
+        echo "Successfully extracted manifests.yaml"
+        
+        # Move manifests to shared workspace
+        MANIFESTS_FILE="/workspace/manifests.yaml"
+        mv ./manifests.yaml "$MANIFESTS_FILE"
+        
+        echo "Content preview:"
+        head -20 "$MANIFESTS_FILE"
+        
+        # Clean up temp directory
+        rm -rf "$TEMP_DIR"
+        
+        echo "Manifest saved to: $MANIFESTS_FILE"
+        
+    - name: apply-manifests
+      image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+      volumeMounts:
+        - name: shared-data
+          mountPath: /workspace
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        MANIFEST_FILE="/workspace/manifests.yaml"
+        echo "Processing manifest file: $MANIFEST_FILE"
+        
+        if [ ! -f "$MANIFEST_FILE" ]; then
+          echo "ERROR: Manifest file not found: $MANIFEST_FILE"
+          exit 1
+        fi
+
+        if [ "$(params.release)" == "true" ]; then
+          echo "Applying manifest..."
+          oc apply -f "$MANIFEST_FILE"
+        else
+          echo "Performing DRY RUN on manifest"
+          oc apply --dry-run=client -f "$MANIFEST_FILE"
+        fi

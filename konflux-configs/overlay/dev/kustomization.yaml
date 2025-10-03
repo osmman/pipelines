@@ -6,8 +6,8 @@ namespace: tturek-tenant
 resources:
 #  - ../../base/project
 #  - ../../base/stream
-#  - ../../base/serviceAccounts
-  - ../../base/releasePlans
+#  - ../../base/service-account
+  - ../../base/release-plan
   - ../../base/application
 
 configMapGenerator:
