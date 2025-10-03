@@ -94,7 +94,11 @@ spec:
       
         echo "Validation completed"
         
+        echo "Debug: release parameter value: '$(params.release)'"
+        
         if [ "$(params.release)" == "true" ]; then
           echo "Applying manifest..."
           oc apply -f "$MANIFEST_FILE"
+        else
+          echo "Skipping manifest application (release='$(params.release)', expected 'true')"
         fi

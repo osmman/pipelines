@@ -13,7 +13,7 @@ spec:
     - name: release
       type: string
       default: "true"
-      description: Whether to perform a dry run without actually applying changes (true/false)
+      description: Whether to perform actual deployment (true) or dry run only (false)
   tasks:
     - name: resolve-image
       taskSpec:
