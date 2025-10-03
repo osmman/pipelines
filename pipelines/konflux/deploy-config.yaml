@@ -30,7 +30,7 @@ spec:
             description: The resolved configuration-as-code image URL
         steps:
           - name: resolve-image
-            image: quay.io/konflux-ci/appstudio-utils:48c311af02858e2422d6229600e9959e496ddef1@sha256:91ddd999271f65d8ec8487b10f3dd378f81aa894e11b9af4d10639fd52bba7e8
+            image: quay.io/konflux-ci/release-service-utils:e633d51cd41d73e4b3310face21bb980af7a662f
             env:
               - name: SNAPSHOT_NAME
                 value: '$(params.SNAPSHOT_NAME)'
@@ -41,19 +41,19 @@ spec:
               IMAGE_PATTERN="$(params.imagePattern)"
 
               echo -e "\nFetching Snapshot Details..."
-              SNAPSHOT_JSON=$(get-resource "snapshot" "${SNAPSHOT}")
+              SNAPSHOT_JSON=$(get-resource "snapshot" "${SNAPSHOT_NAME}")
 
-              SNAPSHOT=$(echo "$SNAPSHOT_JSON" | jq '.spec')
+              SNAPSHOT_SPEC=$(echo "$SNAPSHOT_JSON" | jq '.spec')
               
               # Validate that we have valid JSON
-              if ! echo "$SNAPSHOT" | jq . >/dev/null 2>&1; then
-                echo "ERROR: SNAPSHOT parameter does not contain valid JSON"
-                echo "SNAPSHOT value: $SNAPSHOT"
+              if ! echo "$SNAPSHOT_SPEC" | jq . >/dev/null 2>&1; then
+                echo "ERROR: SNAPSHOT spec does not contain valid JSON"
+                echo "SNAPSHOT_SPEC value: $SNAPSHOT_SPEC"
                 exit 1
               fi
 
-              # SNAPSHOT contains the spec data directly (components array)
-              CONFIG_IMAGE=$(echo "$SNAPSHOT" | jq -r --arg pattern "$IMAGE_PATTERN" '
+              # SNAPSHOT_SPEC contains the spec data directly (components array)
+              CONFIG_IMAGE=$(echo "$SNAPSHOT_SPEC" | jq -r --arg pattern "$IMAGE_PATTERN" '
                 .components[] | 
                 select(.containerImage | contains($pattern)) | 
                 .containerImage')
@@ -61,7 +61,7 @@ spec:
               if [ -z "$CONFIG_IMAGE" ] || [ "$CONFIG_IMAGE" = "null" ]; then
                 echo "ERROR: No image matching pattern '$IMAGE_PATTERN' found in snapshot"
                 echo "Available images in snapshot:"
-                echo "$SNAPSHOT" | jq -r '.components[].containerImage'
+                echo "$SNAPSHOT_SPEC" | jq -r '.components[].containerImage'
                 exit 1
               fi
               
@@ -73,7 +73,7 @@ spec:
           
     - name: extract-and-apply-manifests
       runAfter:
-        - resolve-config-image
+        - resolve-image
       taskRef:
         resolver: git
         params:

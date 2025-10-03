@@ -77,23 +77,24 @@ spec:
           exit 1
         fi
 
+        echo "Performing CRD schema validation"
+        
+        # Ensure YAML is valid
+        if ! yq eval '.' "$MANIFEST_FILE" >/dev/null 2>&1; then
+          echo "ERROR: Invalid YAML syntax in manifest file"
+          exit 1
+        fi
+
+        echo "Attempting validation..."
+
+        if ! oc create --dry-run=client --validate=true -f "$MANIFEST_FILE"; then
+          echo "ERROR: Full CRD schema validation failed"
+          exit 1
+        fi
+      
+        echo "Validation completed"
+        
         if [ "$(params.release)" == "true" ]; then
           echo "Applying manifest..."
           oc apply -f "$MANIFEST_FILE"
-        else
-          echo "Performing YAML validation and preview"
-          echo "Validating YAML syntax..."
-          if ! yq eval '.' "$MANIFEST_FILE" >/dev/null 2>&1; then
-            echo "ERROR: Invalid YAML syntax in manifest file"
-            exit 1
-          fi
-          echo "✅ YAML validation passed"
-          echo ""
-          echo "Manifest content that would be applied:"
-          echo "=====================================​"
-          cat "$MANIFEST_FILE"
-          echo "=====================================​"
-
-          oc apply --dry-run=client -f "$MANIFEST_FILE"
-          echo "✅ Dry run completed - manifest is valid and ready for deployment"
         fi
