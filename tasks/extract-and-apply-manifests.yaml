@@ -81,6 +81,19 @@ spec:
           echo "Applying manifest..."
           oc apply -f "$MANIFEST_FILE"
         else
-          echo "Performing DRY RUN on manifest"
+          echo "Performing YAML validation and preview"
+          echo "Validating YAML syntax..."
+          if ! yq eval '.' "$MANIFEST_FILE" >/dev/null 2>&1; then
+            echo "ERROR: Invalid YAML syntax in manifest file"
+            exit 1
+          fi
+          echo "✅ YAML validation passed"
+          echo ""
+          echo "Manifest content that would be applied:"
+          echo "=====================================​"
+          cat "$MANIFEST_FILE"
+          echo "=====================================​"
+
           oc apply --dry-run=client -f "$MANIFEST_FILE"
+          echo "✅ Dry run completed - manifest is valid and ready for deployment"
         fi
