@@ -404,7 +404,7 @@ spec:
               - name: credentials
                 value: credentials
           - name: execute-operator-e2e
-            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
             onError: continue
             results:
               - name: status
@@ -472,7 +472,7 @@ spec:
                 value: 1d
             # workaround - extract dump-push step to separate action once KONFLUX-5535 is resolved
           - name: report-status
-            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
             env:
               - name: STATUS
                 value: "$(steps.execute-operator-e2e.results.status)"
@@ -618,7 +618,7 @@ spec:
               cd /repository/sigstore-e2e
               ./tas-env-variables.sh > .env
           - name: execute-tas-e2e
-            image: registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09
+            image: registry.redhat.io/ubi9/go-toolset:9.6@sha256:84286c7555df503df0bd3acb86fe2ad50af82a07f35707918bb0fad312fdc193
             volumeMounts:
               - name: credentials
                 mountPath: /credentials
