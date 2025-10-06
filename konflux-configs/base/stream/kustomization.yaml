@@ -3,6 +3,6 @@ kind: Kustomization
 
 resources:
   - overlay/main
-  - overlay/v1-0
-  - overlay/v1-1
-  - overlay/v1-2
+#  - overlay/v1-0
+#  - overlay/v1-1
+#  - overlay/v1-2
