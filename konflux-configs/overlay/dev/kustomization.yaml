@@ -6,7 +6,7 @@ namespace: tturek-tenant
 resources:
 #  - ../../base/project
 #  - ../../base/stream
-#  - ../../base/service-account
+  - ../../base/service-account
   - ../../base/release-plan
   - ../../base/application
 
