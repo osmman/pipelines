@@ -1,0 +1,84 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/2","configuration-time":"Thu, 21 Nov 2024 16:50:06 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: docker-build
+spec:
+  application: pipelines
+  componentName: docker-build
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: configuration-as-code
+      dockerfileUrl: pipeline-tests/Dockerfile
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/3","configuration-time":"Thu, 21 Nov 2024 16:52:24 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: docker-build-oci-ta
+spec:
+  application: pipelines
+  componentName: docker-build-oci-ta
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: configuration-as-code
+      dockerfileUrl: pipeline-tests/Dockerfile
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"docker-build-multi-platform-oci-ta","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/19","configuration-time":"Tue,
+      26 Nov 2024 12:46:01 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: docker-build-multi-platform-oci-ta
+spec:
+  application: pipelines
+  componentName: docker-build-multi-platform-oci-ta
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: configuration-as-code
+      dockerfileUrl: pipeline-tests/Dockerfile
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: Component
+metadata:
+  annotations:
+    build.appstudio.openshift.io/pipeline: '{"name":"fbc-builder","bundle":"latest"}'
+    build.appstudio.openshift.io/status: '{"pac":{"state":"enabled","merge-url":"https://github.com/securesign/pipelines/pull/25","configuration-time":"Thu,
+      05 Dec 2024 09:27:59 UTC"},"message":"done"}'
+    git-provider: github
+    git-provider-url: https://github.com
+  name: fbc-builder
+spec:
+  application: pipelines
+  componentName: fbc-builder
+  source:
+    git:
+      url: https://github.com/securesign/pipelines.git
+      revision: configuration-as-code
+      context: pipeline-tests/fbc
+      dockerfileUrl: pipeline-tests/fbc/catalog.Dockerfile
+
+---

@@ -3,9 +3,9 @@ kind: IntegrationTestScenario
 metadata:
   annotations:
     test.appstudio.openshift.io/kind: enterprise-contract
-  name: "configuration-as-code-enterprise-contract"
+  name: "pipelines-enterprise-contract"
 spec:
-  application: "konflux"
+  application: pipelines
   resolverRef:
     params:
       - name: url

@@ -1,0 +1,89 @@
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-docker-build
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build
+spec:
+  image:
+    name: rhtas-tenant/docker-build
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-docker-build-oci-ta
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-oci-ta
+spec:
+  image:
+    name: rhtas-tenant/docker-build-oci-ta
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-docker-build-multi-platform-oci-ta
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: docker-build-multi-platform-oci-ta
+spec:
+  image:
+    name: rhtas-tenant/docker-build-multi-platform-oci-ta
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
+
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository 
+metadata:
+  annotations:
+    image-controller.appstudio.redhat.com/update-component-image: 'true'
+  name: konflux-fbc-builder
+  labels:
+    appstudio.redhat.com/application: pipelines
+    appstudio.redhat.com/component: fbc-builder
+spec:
+  image:
+    name: rhtas-tenant/fbc-builder
+    visibility: public 
+  notifications:
+    - config:
+        url: https://bombino.api.redhat.com/v1/sbom/quay/push
+      event: repo_push
+      method: webhook
+      title: SBOM-event-to-Bombino
+
+---
