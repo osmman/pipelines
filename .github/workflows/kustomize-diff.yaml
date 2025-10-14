@@ -1,0 +1,299 @@
+name: Kustomize Diff Review
+
+on:
+  pull_request:
+    paths:
+      - 'konflux-configs/**'
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  kustomize-diff:
+    name: Compare Kustomize Outputs
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR branch (HEAD)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-head
+      
+      - name: Checkout target branch (BASE)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: pr-base
+      
+      - name: Build manifests from BASE using Buildah
+        id: base-build
+        run: |
+          cd pr-base/konflux-configs
+          echo "Building manifests from BASE branch (${{ github.event.pull_request.base.ref }})..."
+          set +e
+          buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-base:latest -f Dockerfile . 2>&1 | tee /tmp/base-build.log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          
+          if [ $BUILD_EXIT_CODE -eq 0 ]; then
+            # Extract manifests from the built image using podman
+            podman create --name base-container konflux-config-base:latest
+            podman cp base-container:/manifests.yaml /tmp/base-output.yaml
+            podman rm base-container
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "BASE build successful"
+            echo "Generated $(wc -l < /tmp/base-output.yaml) lines of manifests"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "BASE build failed"
+            cat /tmp/base-build.log > /tmp/base-error.log
+          fi
+      
+      - name: Build manifests from HEAD using Buildah
+        id: head-build
+        run: |
+          cd pr-head/konflux-configs
+          echo "Building manifests from HEAD branch (${{ github.event.pull_request.head.ref }})..."
+          set +e
+          buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-head:latest -f Dockerfile . 2>&1 | tee /tmp/head-build.log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          set -e
+          
+          if [ $BUILD_EXIT_CODE -eq 0 ]; then
+            # Extract manifests from the built image using podman
+            podman create --name head-container konflux-config-head:latest
+            podman cp head-container:/manifests.yaml /tmp/head-output.yaml
+            podman rm head-container
+            echo "status=success" >> $GITHUB_OUTPUT
+            echo "HEAD build successful"
+            echo "Generated $(wc -l < /tmp/head-output.yaml) lines of manifests"
+          else
+            echo "status=failed" >> $GITHUB_OUTPUT
+            echo "HEAD build failed"
+            cat /tmp/head-build.log > /tmp/head-error.log
+          fi
+      
+      - name: Generate Diff Report
+        id: diff
+        run: |
+          # Generate diff
+          if [ "${{ steps.base-build.outputs.status }}" == "success" ] && [ "${{ steps.head-build.outputs.status }}" == "success" ]; then
+            echo "Generating diff..."
+            
+            # Create unified diff
+            if diff -u /tmp/base-output.yaml /tmp/head-output.yaml > /tmp/diff.txt; then
+              echo "has_changes=false" >> $GITHUB_OUTPUT
+              echo "No changes detected in Kustomize output"
+            else
+              echo "has_changes=true" >> $GITHUB_OUTPUT
+              echo "Changes detected"
+              
+              # Count changes
+              ADDITIONS=$(grep -c "^+" /tmp/diff.txt || echo "0")
+              DELETIONS=$(grep -c "^-" /tmp/diff.txt || echo "0")
+              echo "additions=$ADDITIONS" >> $GITHUB_OUTPUT
+              echo "deletions=$DELETIONS" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "has_changes=error" >> $GITHUB_OUTPUT
+            echo "Build failed, cannot generate diff"
+          fi
+      
+      - name: Create Diff Summary
+        id: summary
+        run: |
+          cat > /tmp/comment.md << 'COMMENT_EOF'
+          ## 🔍 Kustomize Configuration Diff Report
+          
+          **Build Method:** Buildah + Podman using `konflux-configs/Dockerfile`  
+          **Environment:** `prod` (ENVIRONMENT=prod)  
+          **Base Branch:** `${{ github.event.pull_request.base.ref }}` (`${{ github.event.pull_request.base.sha }}`)  
+          **PR Branch:** `${{ github.event.pull_request.head.ref }}` (`${{ github.event.pull_request.head.sha }}`)
+          
+          > 📦 This workflow builds manifests using **Buildah** (Red Hat's container tool) and the same
+          > Dockerfile that will be used in production, ensuring the diff reflects the actual deployment
+          > process including any post-processing steps.
+          
+          ---
+          
+          COMMENT_EOF
+          
+          # Add build status
+          if [ "${{ steps.base-build.outputs.status }}" == "failed" ]; then
+            cat >> /tmp/comment.md << 'COMMENT_EOF'
+          ### ❌ BASE Branch Build Failed
+          
+          The Kustomize build failed on the target branch. This might indicate an existing issue.
+          
+          <details>
+          <summary>Build Error Log</summary>
+          
+          ```
+          COMMENT_EOF
+            cat /tmp/base-error.log >> /tmp/comment.md
+            echo '```' >> /tmp/comment.md
+            echo '</details>' >> /tmp/comment.md
+            echo '' >> /tmp/comment.md
+          fi
+          
+          if [ "${{ steps.head-build.outputs.status }}" == "failed" ]; then
+            cat >> /tmp/comment.md << 'COMMENT_EOF'
+          ### ❌ HEAD Branch Build Failed
+          
+          The Kustomize build failed on your PR branch. Please fix the configuration errors.
+          
+          <details>
+          <summary>Build Error Log</summary>
+          
+          ```
+          COMMENT_EOF
+            cat /tmp/head-error.log >> /tmp/comment.md
+            echo '```' >> /tmp/comment.md
+            echo '</details>' >> /tmp/comment.md
+            echo '' >> /tmp/comment.md
+          fi
+          
+          # Add diff if both builds succeeded
+          if [ "${{ steps.base-build.outputs.status }}" == "success" ] && [ "${{ steps.head-build.outputs.status }}" == "success" ]; then
+            if [ "${{ steps.diff.outputs.has_changes }}" == "false" ]; then
+              cat >> /tmp/comment.md << 'COMMENT_EOF'
+          ### ✅ No Changes Detected
+          
+          The Kustomize build output is identical between BASE and HEAD branches.
+          Your changes do not affect the final generated manifests for the prod environment.
+          
+          COMMENT_EOF
+            else
+              cat >> /tmp/comment.md << 'COMMENT_EOF'
+          ### 📊 Changes Summary
+          
+          - **Additions:** ${{ steps.diff.outputs.additions }} lines
+          - **Deletions:** ${{ steps.diff.outputs.deletions }} lines
+          
+          <details>
+          <summary><strong>View Full Diff</strong></summary>
+          
+          ```diff
+          COMMENT_EOF
+              # Add diff but limit size to avoid GitHub comment limits
+              head -n 500 /tmp/diff.txt >> /tmp/comment.md
+              if [ $(wc -l < /tmp/diff.txt) -gt 500 ]; then
+                echo '' >> /tmp/comment.md
+                echo '... (diff truncated, showing first 500 lines)' >> /tmp/comment.md
+              fi
+              echo '```' >> /tmp/comment.md
+              echo '</details>' >> /tmp/comment.md
+              echo '' >> /tmp/comment.md
+            fi
+          fi
+          
+          # Add review guidance
+          cat >> /tmp/comment.md << 'COMMENT_EOF'
+          
+          ---
+          
+          ### 📝 Review Checklist
+          
+          - [ ] Verify namespace configurations are correct
+          - [ ] Check RBAC permissions and service accounts
+          - [ ] Review resource names and labels
+          - [ ] Validate ImageRepository and Component changes
+          - [ ] Confirm ReleasePlan configurations
+          - [ ] Check for unintended resource deletions
+          
+          ### 🔄 Next Steps
+          
+          1. Review the diff above carefully
+          2. Ensure all changes align with the PR objectives
+          3. Test locally with: `buildah bud --build-arg ENVIRONMENT=prod -f konflux-configs/Dockerfile konflux-configs/`
+          4. After approval, changes will auto-deploy to the cluster
+          
+          ---
+          
+          <sub>💡 **Tip:** You can also generate this diff locally by running:</sub>
+          ```bash
+          # On BASE branch
+          git checkout ${{ github.event.pull_request.base.ref }}
+          cd konflux-configs
+          buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
+          podman create --name base-container konflux-config-base
+          podman cp base-container:/manifests.yaml /tmp/base.yaml
+          podman rm base-container
+          
+          # On PR branch
+          git checkout ${{ github.event.pull_request.head.ref }}
+          buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-head -f Dockerfile .
+          podman create --name head-container konflux-config-head
+          podman cp head-container:/manifests.yaml /tmp/head.yaml
+          podman rm head-container
+          
+          # Compare
+          diff -u /tmp/base.yaml /tmp/head.yaml
+          
+          # Clean up
+          podman rmi konflux-config-base konflux-config-head
+          ```
+          COMMENT_EOF
+      
+      - name: Post PR Comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('/tmp/comment.md', 'utf8');
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('🔍 Kustomize Configuration Diff Report')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment
+              });
+              console.log('Updated existing comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment
+              });
+              console.log('Created new comment');
+            }
+      
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kustomize-diff-outputs
+          path: |
+            /tmp/base-output.yaml
+            /tmp/head-output.yaml
+            /tmp/diff.txt
+            /tmp/base-error.log
+            /tmp/head-error.log
+          retention-days: 30
+      
+      - name: Check Build Status
+        if: steps.head-build.outputs.status == 'failed'
+        run: |
+          echo "::error::Kustomize build failed on HEAD branch. Please fix configuration errors."
+          exit 1
+
