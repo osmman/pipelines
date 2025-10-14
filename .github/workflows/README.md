@@ -16,76 +16,109 @@ The workflow runs automatically when:
 
 ### What It Does
 
-1. **Checks out both branches** - Gets both the PR branch (HEAD) and target branch (BASE)
-2. **Builds manifests using Buildah** - Runs `buildah bud` using `konflux-configs/Dockerfile` on both branches, exactly matching the production build process
-3. **Extracts manifests** - Uses `buildah mount` to directly access `/manifests.yaml` from the built images (works with scratch images)
-4. **Generates diff** - Creates a unified diff showing all changes
-5. **Posts PR comment** - Adds a detailed report directly to the pull request
-6. **Uploads artifacts** - Saves the generated manifests and diffs for 30 days
+1. **Installs dyff** - Semantic YAML diff tool for Kubernetes manifests
+2. **Checks out both branches** - Gets both the PR branch (HEAD) and target branch (BASE)
+3. **Builds manifests** - Uses Buildah with `konflux-configs/Dockerfile` (same as production)
+4. **Extracts manifests** - Uses `podman save` + tar to extract `/manifests.yaml` from images
+5. **Generates diff** - Uses `dyff --output github` for colorized, document-aware diffs
+6. **Extracts summary** - Parses dyff output to count added/removed/modified documents
+7. **Posts PR comment** - Shows summary and full diff with all details
+8. **Uploads artifacts** - Saves manifests and diff output for 30 days
 
-> **Important:** This workflow uses **Buildah** (Red Hat's container building tool) and the same `Dockerfile` that Konflux uses in production to build the manifests. The workflow uses `buildah mount` to extract files, which works even with minimal scratch images. This ensures the diff reflects the actual deployment process, including any post-processing steps or future enhancements to the build process.
+> **Important:** This workflow uses **dyff** for semantic YAML comparison, which understands Kubernetes resource structure and accurately identifies changes (unlike line-based diff that can be confused by resource modifications). It also uses **Buildah** (Red Hat's container building tool) and the same `Dockerfile` that Konflux uses in production to build the manifests. Files are extracted using `podman save` and tar commands, which works reliably in rootless CI environments with locally built images.
 
 ### Comment Features
 
-The workflow posts a comprehensive comment that includes:
+The workflow posts a streamlined comment that includes:
 
 - **Build Status** - Shows if Kustomize builds succeeded or failed
-- **Changes Summary** - Statistics on additions and deletions
-- **Full Diff** - Expandable section with complete diff output
-- **Review Checklist** - Helpful items for reviewers to verify
-- **Local Testing Instructions** - Commands to reproduce the diff locally
+- **Compact Summary** - Colorized count of added/removed/modified documents
+- **Detailed Diff** - Full dyff output showing exact changes
+- **Artifacts Link** - Direct link to download full outputs
+
+Key features:
+- Colorized summary (green for added, red for removed, yellow for modified)
+- Document-aware analysis from dyff
+- Shows specific field changes with hierarchical paths
+- Proper syntax highlighting and markdown formatting
 
 ### Example Output
 
 When a PR is opened, you'll see a comment like this:
 
 ```markdown
-## 🔍 Kustomize Configuration Diff Report
+## Configuration Diff
 
-Environment: konflux-configs/overlay/prod
-Base Branch: main (abc123...)
-PR Branch: feat/update-component (def456...)
-
----
-
-### 📊 Changes Summary
-
-- Additions: 15 lines
-- Deletions: 5 lines
+**4** document(s) impacted: ```diff
++ 1 added
+- 2 removed
+! 1 modified
+```
 
 <details>
-<summary>View Full Diff</summary>
+<summary><strong>Diff</strong></summary>
 
-... diff content ...
+```diff
+     _        __  __
+   _| |_   _ / _|/ _|  between base-output.yaml
+ / _' | | | | |_| |_       and head-output.yaml
+| (_| | |_| |  _|  _|
+ \__,_|\__, |_| |_|   
+       |___/
+
+- one document removed:
+  - kind: Service
+    name: old-service
+
++ one document added:
+  + kind: Service
+    name: new-service
+
+± value change
+  + kind: Deployment
+    name: api-server
+  
+  spec.template.spec.containers.0.image
+  - quay.io/app:v1.0
+  + quay.io/app:v2.0
+```
 
 </details>
 
 ---
 
-### 📝 Review Checklist
-
-- [ ] Verify namespace configurations are correct
-- [ ] Check RBAC permissions and service accounts
-...
+📦 **Artifacts:** [base-output.yaml, head-output.yaml, dyff-output.txt](...)
 ```
 
 ### Understanding the Diff
 
-The diff output uses standard unified diff format:
-- Lines starting with `+` (in green) are additions in your PR
-- Lines starting with `-` (in red) are deletions from the base branch
-- Lines with `@@` show the line numbers being changed
-- Unchanged lines provide context
+The workflow uses **dyff with GitHub output format** for optimal display:
+
+**Summary format:**
+- Uses diff syntax for colorization: `+ added` (green), `- removed` (red), `! modified` (yellow)
+- Compact single-line format without lists or emojis
+- Shows total impacted documents at a glance
+
+**Diff output:**
+- Document-aware: Understands YAML documents (Kubernetes resources)
+- Shows added documents: `+ one document added:`
+- Shows removed documents: `- one document removed:`
+- Shows modifications: `± value change` with hierarchical field paths
+- Example path: `spec.template.spec.containers.0.image`
+- Colorized output with syntax highlighting
+- Much more accurate than line-based diff for YAML
+
+The `--output github` flag generates markdown-formatted output that GitHub renders beautifully. dyff automatically detects added, removed, and modified YAML documents.
 
 ### Artifacts
 
 The workflow uploads these artifacts for debugging:
 - `base-output.yaml` - Kustomize output from target branch
 - `head-output.yaml` - Kustomize output from PR branch
-- `diff.txt` - Complete diff file
+- `dyff-output.txt` - Complete dyff semantic diff output
 - Error logs (if builds fail)
 
-Access artifacts from the workflow run page in GitHub Actions.
+Access artifacts from the workflow run page in GitHub Actions or via the link in the PR comment.
 
 ### Permissions
 
@@ -101,9 +134,16 @@ The workflow requires:
 
 **Build fails:**
 - Review the error log in the PR comment
-- Test locally using the Docker build command (see Local Testing section)
+- Test locally using the same commands as the workflow (see Local Testing section)
 - Verify all referenced files exist in `base/` and `overlay/` directories
 - Check that the Konflux test image is accessible: `quay.io/konflux-ci/konflux-test:latest`
+
+**Extraction fails:**
+- The workflow uses `podman save` + tar to extract files from images
+- Verify the image was built successfully: `podman images | grep konflux-config`
+- Test extraction manually: `podman save image-name -o test.tar && tar -xOf test.tar --wildcards '*/layer.tar' | tar -xOf - manifests.yaml`
+- Check that manifests.yaml exists in the image by inspecting the Dockerfile
+- The multi-tier fallback tries different tar formats for maximum compatibility
 
 **Comment not posted:**
 - Check workflow logs in GitHub Actions
@@ -114,11 +154,25 @@ The workflow requires:
 - For very large diffs (>500 lines), only the first 500 lines are shown in the comment
 - Download the full diff from workflow artifacts
 
+**Changes not detected:**
+- The workflow relies entirely on dyff's exit code
+- If dyff exits with 0, no changes are reported
+- If dyff exits with non-zero, changes are shown
+- Download artifacts to manually inspect if needed
+
 ### Local Testing
 
-To test changes locally before pushing (using Buildah, same as the workflow):
+To test changes locally before pushing (using Buildah + dyff, same as the workflow):
 
 ```bash
+# Install dyff (semantic YAML diff tool)
+# Linux:
+curl -sL https://github.com/homeport/dyff/releases/download/v1.9.0/dyff_1.9.0_linux_amd64.tar.gz | tar xz
+sudo mv dyff /usr/local/bin/
+
+# macOS:
+brew install dyff
+
 # Save current branch
 CURRENT_BRANCH=$(git branch --show-current)
 
@@ -126,22 +180,24 @@ CURRENT_BRANCH=$(git branch --show-current)
 git checkout main
 cd konflux-configs
 buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
-CONTAINER_BASE=$(buildah from konflux-config-base)
-MOUNT_BASE=$(buildah mount $CONTAINER_BASE)
-cp $MOUNT_BASE/manifests.yaml /tmp/base.yaml
-buildah umount $CONTAINER_BASE
-buildah rm $CONTAINER_BASE
+podman save konflux-config-base -o /tmp/base.tar
+tar -xOf /tmp/base.tar --wildcards '*/layer.tar' | tar -xOf - manifests.yaml > /tmp/base.yaml
+rm /tmp/base.tar
 
 # Build from your branch using Buildah
 git checkout $CURRENT_BRANCH
 buildah bud --build-arg ENVIRONMENT=prod -t konflux-config-head -f Dockerfile .
-CONTAINER_HEAD=$(buildah from konflux-config-head)
-MOUNT_HEAD=$(buildah mount $CONTAINER_HEAD)
-cp $MOUNT_HEAD/manifests.yaml /tmp/head.yaml
-buildah umount $CONTAINER_HEAD
-buildah rm $CONTAINER_HEAD
+podman save konflux-config-head -o /tmp/head.tar
+tar -xOf /tmp/head.tar --wildcards '*/layer.tar' | tar -xOf - manifests.yaml > /tmp/head.yaml
+rm /tmp/head.tar
 
-# Compare
+# Compare using dyff (recommended - semantic diff)
+dyff between /tmp/base.yaml /tmp/head.yaml
+
+# Or use GitHub output format (same as CI)
+dyff between --output github /tmp/base.yaml /tmp/head.yaml
+
+# Or use traditional diff for quick check
 diff -u /tmp/base.yaml /tmp/head.yaml | less
 
 # Or use a visual diff tool
@@ -151,14 +207,21 @@ code --diff /tmp/base.yaml /tmp/head.yaml
 buildah rmi konflux-config-base konflux-config-head
 ```
 
-> **Note:** The workflow uses `buildah mount` to extract files from scratch images. If you prefer Docker:
+> **Note:** This approach uses `dyff` for semantic YAML comparison (same as CI) and `podman save` to export images. The workflow uses the same Dockerfile as production, ensuring the diff reflects the actual build output.
+> 
+> **Requirements:** You need `buildah`, `podman`, and optionally `dyff`:
 > ```bash
-> docker build --build-arg ENVIRONMENT=prod -t konflux-config-base -f Dockerfile .
-> docker create --name base-c konflux-config-base sh  # Need to specify a command for scratch images
-> docker cp base-c:/manifests.yaml /tmp/base.yaml
-> docker rm base-c
+> # macOS
+> brew install buildah podman dyff
+> 
+> # Linux (Fedora/RHEL/CentOS)
+> sudo dnf install buildah podman
+> # Install dyff from GitHub releases
+> 
+> # Linux (Ubuntu/Debian)
+> sudo apt install buildah podman
+> # Install dyff from GitHub releases
 > ```
-> However, Buildah's mount approach is more straightforward for scratch images.
 
 ### Integration with PR Workflow
 

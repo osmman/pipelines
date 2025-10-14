@@ -8,7 +8,7 @@ spec:
     name: rhtas-fbc-project-template
     values:
       - name: version
-        value: "main"
+        value: "v1.4"
       - name: operator
         value: "rhtas-operator"
       - name: gitRevision
